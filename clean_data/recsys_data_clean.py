@@ -10,7 +10,7 @@ writefilepath = './user_items_playtime.csv'
 data = []
 game_ids_valid = set()	# We only want to have game ids that appear in any user's game list
 
-max_item_id = 100		# use as a way to constrict memory errors, increase as needed
+max_item_id = 100000		# use as a way to constrict memory errors, increase as needed
 num_games_considered = 0 # Just for profiling
 num_valid_users = 0		# Also profiling
 
