@@ -1,14 +1,19 @@
 import json
 import pandas as pd
 import ast
+import numpy as np
+from collections import OrderedDict
 
 filepath = './user_items.json'
-#writefilepath = './clean_user_items.json'
-writefilepath = './user_items_matrix.csv'
-
+writefilepath = './user_items_playtime.csv'
 
 data = []
-max_item_id = 0
+game_ids_valid = set()	# We only want to have game ids that appear in any user's game list
+
+max_item_id = 100		# use as a way to constrict memory errors, increase as needed
+num_games_considered = 0 # Just for profiling
+num_valid_users = 0		# Also profiling
+
 with open(filepath) as f:
 	for line in f:
 		l = ast.literal_eval(line)	# Convert single quotes in json to proper double quotes
@@ -21,17 +26,19 @@ with open(filepath) as f:
 				playtime = g["playtime_forever"]
 				if playtime > 0:	# Also don't consider games not played
 					game_id = int(g["item_id"])
-					if game_id <= 100000: 		# Set limit on games due to space
-						if game_id > max_item_id:
-							max_item_id = game_id
+					if game_id <=  max_item_id: 		# Set limit on games due to space
 						games_filter.append({game_id: playtime})
-			data.append({l["user_id"]: games_filter})
+						game_ids_valid.add(game_id)
+						num_games_considered += 1
+
+			if len(games_filter) >= 1:		
+				num_valid_users += 1	
+				data.append({l["user_id"]: games_filter})
 
 print(max_item_id)
-
-# Intermediate data written out (not much use without a little more profiling; we still need max_item_id)
-#with open(writefilepath, 'w') as outfile:
-#	json.dump(data, outfile)
+print(num_games_considered)
+print(len(game_ids_valid))
+print(num_valid_users)
 
 # Now with format as data (list of nested JSON objects) = 	[	{user_id: [	{item_id: playtime_forever}		]	}	]
 # Convert to dataframe where
@@ -42,16 +49,32 @@ print(max_item_id)
 #	xn
 
 
-df = pd.DataFrame(columns = list(range(max_item_id)))
+# Create list of game_id's only based on the valid game ids
+game_list = list(game_ids_valid)
+game_list = sorted(game_list)
+games_dict = OrderedDict()
+
+df = pd.DataFrame(columns = list(game_list))
+items_list = np.zeros(len(game_list))
+
 
 for user in data:
+	
+	# Clear entries of sorted Dictionary (and creates the first set of key-value pairs)
+	for k in game_list:	
+		games_dict[k] = 0
+
 	key = next(iter(user))	# Note there's only one key. User is {user_id: [...]}
-		items = user[key]
-		items_list = [0] * max_item_id
-		for i in items:
-			[(k, v)] = i.items()
-			items_list[k] = v
-		df[key] = items_list
+	df.loc[key] = 0
+	items = user[key]
+	for i in items:
+		[(k, v)] = i.items()
+		games_dict[k] = v
+
+	# Make the list based on the sorted values in dict
+	val = list(games_dict.values())
+	for i in range(len(game_list)):
+		df.loc[key][game_list[i]] = val[i]
 
 df.head(10)
-df.to_csv(writefilepath)
+df.to_csv(writefilepath, header=False, index=False)
