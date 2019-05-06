@@ -3,6 +3,7 @@ import pandas as pd
 import ast
 import numpy as np
 from collections import OrderedDict
+from sklearn.preprocessing import MinMaxScaler
 
 filepath = './user_items.json'
 writefilepath = './user_items_playtime.csv'
@@ -10,7 +11,7 @@ writefilepath = './user_items_playtime.csv'
 data = []
 game_ids_valid = set()	# We only want to have game ids that appear in any user's game list
 
-max_item_id = 100000		# use as a way to constrict memory errors, increase as needed
+max_item_id = 100		# use as a way to constrict memory errors, increase as needed
 num_games_considered = 0 # Just for profiling
 num_valid_users = 0		# Also profiling
 
@@ -52,6 +53,7 @@ print(num_valid_users)
 # Create list of game_id's only based on the valid game ids
 game_list = list(game_ids_valid)
 game_list = sorted(game_list)
+print(*game_list)
 games_dict = OrderedDict()
 
 df = pd.DataFrame(columns = list(game_list))
@@ -76,5 +78,12 @@ for user in data:
 	for i in range(len(game_list)):
 		df.loc[key][game_list[i]] = val[i]
 
-df.head(10)
+print(df)
+
+scaler = MinMaxScaler(feature_range=(0,10))
+scaled_values = scaler.fit_transform(df)
+df.loc[:,:] = scaled_values
+
+print(df)
+
 df.to_csv(writefilepath, header=False, index=False)
