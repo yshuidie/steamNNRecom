@@ -2,8 +2,10 @@ import ast
 import json
 import pandas as pd
 
+max_game_id = 100
+
 filepath = './user_items.json'
-writefilepath = './user_game_names.csv'
+writefilepath = './user_game_names_' + str(max_game_id) + '.csv'
 
 # max_game_id = 99920 for 100k cap
 # 				= 19990 for 20k cap
@@ -12,7 +14,7 @@ writefilepath = './user_game_names.csv'
 df = pd.DataFrame(columns = ['userid', 'game_names'])
 
 with open(filepath) as f:
-	i = 0
+	single_game = 0
 	for line in f:
 		l = ast.literal_eval(line)	# Convert single quotes in json to proper double quotes
 	
@@ -24,13 +26,13 @@ with open(filepath) as f:
 				playtime = g["playtime_forever"]
 				if playtime > 0:	# Also don't consider games not played
 					game_id = int(g["item_id"])
-					if game_id <= 100000: 		# Set limit on games due to space
+					if game_id <= max_game_id: 		# Set limit on games due to space
 						games_filter.append(g["item_name"])
 			
 			if len(games_filter) >= 1:
-				df.loc[i] = pd.Series({'userid': l["user_id"], 'game_names': games_filter})
-				i += 1
+				df.loc[l["user_id"]] = pd.Series({'userid': l["user_id"], 'game_names': games_filter})
 
-
+print("Size = {}\nShape ={}". 
+format(df.size, df.shape)) 
 
 df.to_csv(writefilepath, header=False, index=False)
