@@ -1,3 +1,6 @@
+max_item_id = 10000		# use as a way to constrict memory errors, increase as needed
+
+
 import json
 import pandas as pd
 import ast
@@ -6,16 +9,16 @@ from collections import OrderedDict
 from sklearn.preprocessing import MinMaxScaler
 
 filepath = './user_items.json'
-writefilepath = './user_items_playtime.csv'
+writefilepath = './user_items_playtime_' + str(max_item_id) + '.csv'
 
 data = []
 game_ids_valid = set()	# We only want to have game ids that appear in any user's game list
 
-max_item_id = 100		# use as a way to constrict memory errors, increase as needed
 num_games_considered = 0 # Just for profiling
 num_valid_users = 0		# Also profiling
 
-with open(filepath) as f:
+count = 0
+with open(filepath,encoding='gb18030',errors='ignore') as f:
 	for line in f:
 		l = ast.literal_eval(line)	# Convert single quotes in json to proper double quotes
 
@@ -35,11 +38,17 @@ with open(filepath) as f:
 			if len(games_filter) >= 1:		
 				num_valid_users += 1	
 				data.append({l["user_id"]: games_filter})
+        
+		#count = count+1
+		#print(count)
+
+        
 
 print(max_item_id)
 print(num_games_considered)
 print(len(game_ids_valid))
 print(num_valid_users)
+
 
 # Now with format as data (list of nested JSON objects) = 	[	{user_id: [	{item_id: playtime_forever}		]	}	]
 # Convert to dataframe where
@@ -48,8 +57,8 @@ print(num_valid_users)
 #	x1				playtime_forever
 #	...
 #	xn
-
-
+#
+# 
 # Create list of game_id's only based on the valid game ids
 game_list = list(game_ids_valid)
 game_list = sorted(game_list)
@@ -78,12 +87,4 @@ for user in data:
 	for i in range(len(game_list)):
 		df.loc[key][game_list[i]] = val[i]
 
-print(df)
-
-scaler = MinMaxScaler(feature_range=(0,10))
-scaled_values = scaler.fit_transform(df)
-df.loc[:,:] = scaled_values
-
-print(df)
-
-df.to_csv(writefilepath, header=False, index=False)
+df.to_csv(writefilepath, index=False)
