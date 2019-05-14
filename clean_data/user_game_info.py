@@ -2,13 +2,13 @@ import ast
 import json
 import pandas as pd
 
-max_game_id = 100
+max_game_id = 1000
 
 filepath = './user_items.json'
 df1 = pd.DataFrame(columns = ['userid', 'game_names'])
 
 with open(filepath) as f:
-	single_game = 0
+	game_id_list = []
 	for line in f:
 		l = ast.literal_eval(line)	# Convert single quotes in json to proper double quotes
 	
@@ -27,7 +27,10 @@ with open(filepath) as f:
 				df1.loc[l["user_id"]] = pd.Series({'userid': l["user_id"], 'game_names': games_filter})
 
 filepath = './steam_games.json'
+
+#### NEED TO GET USER_ID WITH GAME_GENRE ###################
 df2 = pd.DataFrame(columns = ['userid', 'game_genres'])
+df21 = pd.DataFrame(columns = ['game_name', 'genres'])
 i = 0
 
 with open(filepath) as f:
@@ -49,8 +52,20 @@ with open(filepath) as f:
 			genres = 0
 
 		if game != 0:
-			df2.loc[i] = pd.Series({'game_name': game, 'genres': genres})
+			df21.loc[i] = pd.Series({'game_name': game, 'genres': genres})
 			i += 1
+
+# Match game_names from df1 with game_name from df21, create set of genres from it (then convert to list) for df2
+for row in df1.itertuples():
+    genre_list = set()
+    for name in row.game_names:
+        g = df21[df21.game_name == name]
+        for k in g.genres:
+            # Should only have one value for k (the list itself)
+            # Iterate through the list for its values now
+            for l in k:
+                genre_list.add(l)
+    df2.loc[row.Index] = pd.Series({'userid': row.userid, 'game_genres': list(genre_list)})
 
 filepath = './user_reviews.json'
 
@@ -73,8 +88,9 @@ with open(filepath) as f:
 			df3.loc[i] = pd.Series({"userid": l["user_id"], "reviews": review_list})
 		i += 1
 
-df = df1.merge(dfs2, how='left', on='userid').merge(df3,on='userid')
+df = df1.merge(df2, how='left', on='userid').merge(df3.drop_duplicates(subset=['userid']), how='left', on='userid')
 df = df.fillna(0)
 
 writefilepath = './user_game_info.csv'
 df.to_csv(writefilepath, header=False, index=False)
+
