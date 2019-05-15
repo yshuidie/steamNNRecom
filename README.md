@@ -8,5 +8,11 @@ Dataset: http://cseweb.ucsd.edu/~jmcauley/datasets.html#steam_data
 
 # References
 
-Framework: https://github.com/marlesson/recsys_autoencoders
+Training Deep AutoEncoders for Collaborative Filtering
+https://arxiv.org/abs/1708.01715
+
+Variational Autoencoders for Collaborative Filtering
+https://arxiv.org/abs/1802.05814
+
+
 
